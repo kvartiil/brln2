@@ -1,0 +1,516 @@
+<div class="alert alert-success py-3" role="alert"
+     *ngIf="showSuccessMessage">
+  <div class="d-flex justify-content-between">
+    <div class="d-flex pb-1">
+      <span class="material-icons-outlined">
+        info
+      </span>
+    </div>
+    <button type="button" class="btn btn-close d-flex" data-bs-dismiss="alert" aria-label="Close"
+            (click)="closeSuccessMessage()"></button>
+  </div>
+  <p class="my-0"> {{'successMsg' | translate}}</p>
+</div>
+
+
+<div class="" *ngIf="jsonForm?.generalInfo && !showSuccessMessage">
+  <p [innerHTML]="getTextLang(jsonForm?.generalInfo?.description) | sanitize"></p>
+</div>
+
+<div *ngIf="!showSuccessMessage && formAnswers?.name && formAnswers?.created && formAnswers?.personal_code">
+  <h2>{{'lastSubmitted' | translate}}</h2>
+  <div>
+    <p class="my-0">
+      {{'person' | translate}}
+    </p>
+    <p>{{formAnswers?.name}} ({{formAnswers?.personal_code}})</p>
+
+    <p class="my-0">
+      {{'submitTime' | translate}}
+    </p>
+    <p>{{formAnswers?.created | date:'dd.MM.yyyy HH:mm'}}</p>
+  </div>
+</div>
+
+
+<form [formGroup]="formGroup" (ngSubmit)="onFormSubmit()" *ngIf="!showSuccessMessage">
+  <div *ngFor="let section of jsonForm?.sections; let indexOfSection=index" class="form-sections">
+    <h2 class="my-4">{{getTextLang(section?.title)}}</h2>
+    <div class="px-lg-4" *ngFor="let question of section?.questions; let indexOfQuestion=index">
+
+      <div class="my-3">
+        <p class="my-0 question-text" id="{{question?.id}}">{{getTextLang(question?.title)}} <span *ngIf="question?.required"
+                                                                                                   class="question-required">*</span></p>
+        <p *ngIf="question?.description"
+           class="my-0 px-lg-4 question-description">{{getTextLang(question?.description)}}</p>
+      </div>
+
+      <div *ngIf="question?.type == QuestionType.RADIO">
+        <div class="form-check" *ngFor="let field of question?.fields;let indexOfField=index">
+          <div class="my-2 px-lg-4">
+            <input [ngClass]='{"validation-err": isSubmitted && getIfError(question?.id)}' class="form-check-input"
+                   type="radio" value="{{field?.value}}" id="{{question?.id+indexOfField}}"
+                   formControlName="{{question?.id}}" maxlength="{{field?.maxLength}}">
+            <label class="form-check-label" for="{{question?.id+indexOfField}}">
+              {{getTextLang(field?.title)}}
+            </label>
+          </div>
+          <div *ngFor="let extraField of field?.fields">
+            <div class="form-group" *ngIf="showCommentFieldRadio(question?.id, field?.value, extraField?.id)">
+              <div *ngIf="extraField?.type == FieldType.TEXTAREA">
+                <label for="{{extraField?.id}}">{{getTextLang(extraField?.title)}}</label>
+                <textarea class="form-control"
+                          placeholder="{{extraField?.maxLength ? (('upto' | translate) + ' ' +  extraField?.maxLength + ' ' + ('characters' | translate)) : ''}}"
+                          maxlength="{{extraField?.maxLength}}"
+                          [ngClass]='{"validation-err": isSubmitted && getIfErrorRequiredField(extraField?.id)}'
+                          id="{{extraField?.id}}" formControlName="{{extraField?.id}}"
+                          rows="{{extraField?.rows}}"></textarea>
+              </div>
+
+              <div *ngIf="extraField?.type == FieldType.EMAIL">
+                <label for="{{extraField?.id}}"> {{getTextLang(extraField?.title)}}</label>
+                <input
+                  [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(extraField?.id) || getIfInvalidEmail(extraField?.id))}'
+                  type="email" placeholder="email@email.com" class="form-control" id="{{extraField?.id}}"
+                  formControlName="{{extraField?.id}}"
+                  maxlength="{{extraField?.maxLength}}">
+
+                <div *ngIf="isSubmitted && getIfInvalidEmail(extraField?.id)">
+                  <div class="valid-polygon"></div>
+                  <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                    {{'correctEmail' | translate}}
+                  </div>
+
+                </div>
+                <div *ngIf="isSubmitted && getIfErrorRequiredField(extraField?.id)">
+                  <div class="valid-polygon"></div>
+                  <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                    {{'mandatoryField' | translate}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-lg-4" *ngIf="isSubmitted && getIfError(question?.id)">
+          <div class="valid-polygon"></div>
+          <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+            {{'mandatoryField' | translate}}
+          </div>
+
+        </div>
+
+        <div *ngFor="let secondQuestion of question?.questions; let indexOfInnerQuestion=index">
+          <div *ngIf="makeQuestionVisible(question, secondQuestion)">
+            <div class="my-3">
+              <p class="my-0 question-text" id="{{secondQuestion?.id}}">{{getTextLang(secondQuestion?.title)}} <span
+                *ngIf="secondQuestion?.required" class="question-required">*</span></p>
+              <p *ngIf="secondQuestion?.description"
+                 class="my-0 px-lg-4 question-description">{{getTextLang(secondQuestion?.description)}}</p>
+            </div>
+
+            <div *ngIf="secondQuestion?.type == QuestionType.RADIO">
+              <div class="form-check" *ngFor="let field of secondQuestion?.fields;let indexOfField=index">
+                <div class="my-2 px-lg-4">
+                  <input [ngClass]='{"validation-err": isSubmitted && getIfError(secondQuestion?.id)}'
+                         class="form-check-input" type="radio" id="{{secondQuestion?.id+indexOfField}}"
+                         value="{{field?.value}}" formControlName="{{secondQuestion?.id}}" maxlength="{{field?.maxLength}}">
+                  <label class="form-check-label" for="{{secondQuestion?.id+indexOfField}}">
+                    {{getTextLang(field?.title)}}
+                  </label>
+                </div>
+                <div *ngFor="let extraField of field?.fields">
+                  <div class="form-group"
+                       *ngIf="showCommentFieldRadio(secondQuestion?.id, field?.value, extraField?.id)">
+                    <div *ngIf="extraField?.type == FieldType.TEXTAREA">
+                      <label for="{{extraField?.id}}">{{getTextLang(extraField?.title)}}</label>
+                      <textarea [ngClass]='{"validation-err": isSubmitted && (getIfError(extraField?.id) || getIfFieldInvalid(extraField?.id))}'
+                                class="form-control" id="{{extraField?.id}}" formControlName="{{extraField?.id}}"
+                                maxlength="{{extraField?.maxLength}}"
+                                rows="{{extraField?.rows}}"
+                                placeholder="{{extraField?.maxLength ? (('upto' | translate) + ' ' +  extraField?.maxLength + ' ' + ('characters' | translate)) : ''}}"></textarea>
+                    </div>
+
+                    <div *ngIf="extraField?.type == FieldType.EMAIL">
+                      <label for="{{extraField?.id}}"> {{getTextLang(extraField?.title)}}</label>
+                      <input
+                        [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(extraField?.id) || getIfInvalidEmail(extraField?.id) || getIfFieldInvalid(extraField?.id))}'
+                        type="email"
+                        class="form-control" placeholder="email@email.com" id="{{extraField?.id}}"
+                        formControlName="{{extraField?.id}}" maxlength="{{extraField?.maxLength}}">
+
+                      <div *ngIf="isSubmitted && getIfInvalidEmail(extraField?.id)">
+                        <div class="valid-polygon"></div>
+                        <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                          {{'correctEmail' | translate}}
+                        </div>
+                      </div>
+                      <div *ngIf="isSubmitted && getIfErrorRequiredField(extraField?.id)">
+                        <div class="valid-polygon"></div>
+                        <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                          {{'mandatoryField' | translate}}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+              <div class="px-lg-4" *ngIf="isSubmitted && getIfError(secondQuestion?.id)">
+                <div class="valid-polygon"></div>
+                <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                  {{'mandatoryField' | translate}}
+                </div>
+
+              </div>
+            </div>
+
+            <div *ngIf="secondQuestion.type == QuestionType.TEXTINPUT">
+              <div class="form-check" *ngFor="let field of secondQuestion?.fields">
+                <textarea [ngClass]='{"validation-err": isSubmitted &&  (getIfError(secondQuestion?.id) || getIfFieldInvalid(secondQuestion?.id))}'
+                          class="form-control" id="{{secondQuestion?.id}}" formControlName="{{secondQuestion?.id}}"
+                          maxlength="{{field?.maxLength}}"
+                          rows="{{field?.rows}}"
+                          placeholder="{{field?.maxLength ? (('upto' | translate) + ' ' +  field?.maxLength + ' ' + ('characters' | translate)) : ''}}"></textarea>
+              </div>
+              <div class="px-lg-4" *ngIf="isSubmitted &&  getIfError(secondQuestion?.id)">
+                <div class="valid-polygon"></div>
+                <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                  {{'mandatoryField' | translate}}
+                </div>
+
+              </div>
+            </div>
+
+            <div *ngIf="secondQuestion?.type == QuestionType.FIELDSET">
+              <div *ngFor="let field of secondQuestion?.fields">
+                <div class="px-lg-4 my-2">
+                  <div class="form-check" *ngIf="field?.type == FieldType.CHECKBOX"
+                       formGroupName="{{secondQuestion?.id}}">
+                    <input [ngClass]='{"validation-err": isSubmitted &&  getIfError(secondQuestion?.id, null, true)}'
+                           class="form-check-input" type="checkbox" id="{{field?.id}}" value="checked"
+                           formControlName="{{field?.id}}" maxlength="{{field?.maxLength}}">
+                    <label class="form-check-label" for="{{field?.id}}">
+                      {{getTextLang(field?.title)}}
+                    </label>
+                  </div>
+                  <div *ngFor="let extraField of field?.fields">
+                    <div class="form-group" *ngIf="showCommentField(secondQuestion?.id, field?.id, extraField?.id)">
+                      <div *ngIf="extraField?.type == FieldType.TEXTAREA">
+                        <label for="{{extraField?.id}}">{{getTextLang(extraField?.title)}}</label>
+                        <textarea [ngClass]='{"validation-err": isSubmitted &&  (getIfErrorRequiredField(extraField?.id) || getIfFieldInvalid(extraField?.id))}'
+                                  class="form-control" id="{{extraField?.id}}" formControlName="{{extraField?.id}}"
+                                  maxlength="{{extraField?.maxLength}}"
+                                  rows="{{extraField?.rows}}"
+                                  placeholder="{{extraField?.maxLength ? (('upto' | translate) + ' ' +  extraField?.maxLength + ' ' + ('characters' | translate)) : ''}}"></textarea>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="form-group" *ngIf="field?.type == FieldType.STRING">
+                    <label for="{{field?.id}}"> {{getTextLang(field?.title)}}</label>
+                    <div class="input-group">
+                      <span *ngIf="field?.prefix" class="input-group-text">{{field?.prefix}}</span>
+                      <input [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(field?.id) || getIfFieldInvalid(field?.id))}' type="text"
+                             class="form-control" id="{{field?.id}}" formControlName="{{field?.id}}" maxlength="{{field?.maxLength}}">
+                    </div>
+                    <div class="" *ngIf="isSubmitted && getIfErrorRequiredField(field?.id)">
+                      <div class="valid-polygon"></div>
+                      <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                        {{'mandatoryField' | translate}}
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="form-group" *ngIf="field?.type == FieldType.NUMBER">
+                    <label for="{{field?.id}}"> {{getTextLang(field?.title)}}</label>
+                    <div class="input-group">
+                      <span *ngIf="field?.prefix" class="input-group-text">{{field?.prefix}}</span>
+                      <input
+                        [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(field?.id) || getIfInvalidNumber(field?.id) || getIfFieldInvalid(field?.id))}'
+                        type="text"
+                        class="form-control" id="{{field?.id}}" formControlName="{{field?.id}}" maxlength="{{field?.maxLength}}">
+                    </div>
+                    <div class="" *ngIf="isSubmitted && getIfInvalidNumber(field?.id)">
+                      <div class="valid-polygon"></div>
+                      <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                        {{'correctNumber' | translate}}
+                      </div>
+                    </div>
+
+                    <div class="" *ngIf="isSubmitted && getIfErrorRequiredField(field?.id)">
+                      <div class="valid-polygon"></div>
+                      <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                        {{'mandatoryField' | translate}}
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="form-group" *ngIf="field?.type == FieldType.EMAIL">
+                    <label for="{{field?.id}}"> {{getTextLang(field?.title)}}</label>
+                    <input
+                      [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(field?.id) || getIfInvalidEmail(field?.id) || getIfFieldInvalid(field?.id))}'
+                      type="email"
+                      class="form-control" id="{{field?.id}}" formControlName="{{field?.id}}"
+                      placeholder="email@email.com" maxlength="{{field?.maxLength}}">
+
+                    <div class="" *ngIf="isSubmitted && getIfInvalidEmail(field?.id)">
+                      <div class="valid-polygon"></div>
+                      <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                        {{'correctEmail' | translate}}
+                      </div>
+
+                    </div>
+                    <div class="" *ngIf="isSubmitted && getIfErrorRequiredField(field?.id)">
+                      <div class="valid-polygon"></div>
+                      <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                        {{'mandatoryField' | translate}}
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="px-lg-4" *ngIf="isSubmitted && getIfError(secondQuestion?.id, null, true)">
+                <div class="valid-polygon"></div>
+                <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                  {{'mandatoryField' | translate}}
+                </div>
+              </div>
+            </div>
+
+
+            <div *ngFor="let thirdQuestion of secondQuestion?.questions; let indexOfThirdInnerQuestion=index">
+              <div *ngIf="makeQuestionVisible(secondQuestion, thirdQuestion)">
+
+                <div class="my-3">
+                  <p class="my-0 question-text" id="{{thirdQuestion?.id}}">{{getTextLang(thirdQuestion?.title)}} <span
+                    *ngIf="thirdQuestion?.required" class="question-required">*</span></p>
+                  <p *ngIf="thirdQuestion?.description"
+                     class="my-0 px-lg-4 question-description">{{getTextLang(thirdQuestion?.description)}}</p>
+                </div>
+
+
+                <div *ngIf="thirdQuestion?.type == QuestionType.RADIO">
+                  <div class="form-check" *ngFor="let field of thirdQuestion?.fields;let indexOfField=index">
+                    <div class="px-lg-4 my-2">
+                      <input [ngClass]='{"validation-err": isSubmitted && getIfError(thirdQuestion?.id)}'
+                             class="form-check-input" type="radio" id="{{thirdQuestion?.id+indexOfField}}"
+                             value="{{field?.value}}" formControlName="{{thirdQuestion?.id}}" maxlength="{{field?.maxLength}}">
+                      <label class="form-check-label" for="{{thirdQuestion?.id+indexOfField}}">
+                        {{getTextLang(field?.title)}}
+                      </label>
+                    </div>
+                  </div>
+                  <div class="px-lg-4" *ngIf="isSubmitted && getIfError(thirdQuestion?.id)">
+                    <div class="valid-polygon"></div>
+                    <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                      {{'mandatoryField' | translate}}
+                    </div>
+
+                  </div>
+                </div>
+
+                <div *ngIf="thirdQuestion?.type == QuestionType.TEXTINPUT">
+                  <div class="form-check" *ngFor="let field of thirdQuestion?.fields">
+                    <textarea [ngClass]='{"validation-err": isSubmitted && (getIfError(thirdQuestion?.id) || getIfFieldInvalid(thirdQuestion?.id))}'
+                              class="form-control" id="{{thirdQuestion?.id}}" formControlName="{{thirdQuestion?.id}}"
+                              maxlength="{{field?.maxLength}}"
+                              rows="{{field?.rows}}"
+                              placeholder="{{field?.maxLength ? (('upto' | translate) + ' ' +  field?.maxLength + ' ' + ('characters' | translate)) : ''}}"></textarea>
+                  </div>
+                  <div class="px-lg-4" *ngIf="isSubmitted && getIfError(thirdQuestion?.id)">
+                    <div class="valid-polygon"></div>
+                    <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                      {{'mandatoryField' | translate}}
+                    </div>
+
+                  </div>
+                </div>
+
+                <div *ngIf="thirdQuestion?.type == QuestionType.FIELDSET">
+                  <div *ngFor="let field of thirdQuestion?.fields">
+                    <div class="form-check" *ngIf="field?.type == FieldType.CHECKBOX"
+                         formGroupName="{{thirdQuestion?.id}}">
+                      <input [ngClass]='{"validation-err": isSubmitted && getIfError(thirdQuestion?.id, null, true)}'
+                             class="form-check-input" type="checkbox" id="{{field?.id}}" value="checked"
+                             formControlName="{{field?.id}}" maxlength="{{field?.maxLength}}">
+                      <label class="form-check-label" for="{{field?.id}}">
+                        {{getTextLang(field?.title)}}
+                      </label>
+                    </div>
+                    <div *ngFor="let extraField of field?.fields">
+                      <div class="form-group" *ngIf="showCommentField(thirdQuestion?.id, field?.id, extraField?.id)">
+                        <div *ngIf="extraField?.type == FieldType.TEXTAREA">
+                          <label for="{{extraField?.id}}">{{getTextLang(extraField?.title)}}</label>
+                          <textarea
+                            [ngClass]='{"validation-err": isSubmitted && (getIfError(thirdQuestion?.id, thirdQuestion?.fields) || getIfFieldInvalid(thirdQuestion?.id))}'
+                            class="form-control" id="{{extraField?.id}}" formControlName="{{extraField?.id}}" maxlength="{{extraField?.maxLength}}"
+                            rows="{{extraField?.rows}}"
+                            placeholder="{{extraField?.maxLength ? (('upto' | translate) + ' ' +  extraField?.maxLength + ' ' + ('characters' | translate)) : ''}}"></textarea>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    <div class="form-group" *ngIf="field?.type == FieldType.STRING">
+                      <label for="{{field?.id}}"> {{getTextLang(field?.title)}}</label>
+
+                      <div class="input-group">
+                        <span *ngIf="field?.prefix" class="input-group-text">{{field?.prefix}}</span>
+                        <input
+                          [ngClass]='{"validation-err": isSubmitted && (getIfError(thirdQuestion?.id, thirdQuestion?.fields) || getIfFieldInvalid(thirdQuestion?.id))}'
+                          type="text" class="form-control" id="{{field?.id}}" formControlName="{{field?.id}}" maxlength="{{field?.maxLength}}">
+                      </div>
+                    </div>
+
+                    <div class="form-group" *ngIf="field?.type == FieldType.NUMBER">
+                      <label for="{{field?.id}}"> {{getTextLang(field?.title)}}</label>
+                      <div class="input-group">
+                        <span *ngIf="field?.prefix" class="input-group-text">{{field?.prefix}}</span>
+                        <input
+                          [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(field?.id) || getIfInvalidNumber(field?.id) || getIfFieldInvalid(field?.id))}'
+                          type="text"
+                          class="form-control" id="{{field?.id}}" formControlName="{{field?.id}}" maxlength="{{field?.maxLength}}">
+                      </div>
+                      <div class="" *ngIf="isSubmitted && getIfInvalidNumber(field?.id)">
+                        <div class="valid-polygon"></div>
+                        <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                          {{'correctNumber' | translate}}
+                        </div>
+                      </div>
+
+                      <div class="" *ngIf="isSubmitted && getIfErrorRequiredField(field?.id)">
+                        <div class="valid-polygon"></div>
+                        <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                          {{'mandatoryField' | translate}}
+                        </div>
+
+                      </div>
+                    </div>
+
+
+                    <div class="form-group" *ngIf="field?.type == FieldType.EMAIL">
+                      <label for="{{field?.id}}"> {{getTextLang(field?.title)}}</label>
+                      <input
+                        [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(field?.id) || getIfInvalidEmail(field?.id) || getIfFieldInvalid(field?.id))}'
+                        type="email" placeholder="email@email.com" class="form-control" id="{{field?.id}}"
+                        formControlName="{{field?.id}}" maxlength="{{field?.maxLength}}">
+
+
+                      <div *ngIf="isSubmitted && getIfInvalidEmail(field?.id)">
+                        <div class="valid-polygon"></div>
+                        <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                          {{'correctEmail' | translate}}
+                        </div>
+
+                      </div>
+                      <div *ngIf="isSubmitted && getIfErrorRequiredField(field?.id)">
+                        <div class="valid-polygon"></div>
+                        <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                          {{'mandatoryField' | translate}}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                  <div class="px-lg-4" *ngIf="isSubmitted && getIfError(thirdQuestion?.id, thirdQuestion?.fields)">
+                    <div class="valid-polygon"></div>
+                    <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+                      {{'mandatoryField' | translate}}
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+
+          </div>
+        </div>
+
+      </div>
+
+      <div *ngIf="question?.type == QuestionType.FIELDSET">
+        <div *ngFor="let field of question?.fields">
+          <div class="px-lg-4" *ngIf="field?.type == FieldType.CHECKBOX">
+            <div class="form-check" formGroupName="{{question?.id}}">
+              <input class="form-check-input" [ngClass]='{"validation-err": isSubmitted && (getIfError(question?.id, null, true) || getIfFieldInvalid(question?.id))}'
+                     type="checkbox" id="{{field?.id}}" formControlName="{{field?.id}}" id="flexCheckDefault" maxlength="{{field?.maxLength}}">
+              <label class="form-check-label" for="{{field?.id}}">
+                {{getTextLang(field?.title)}}
+              </label>
+            </div>
+            <div *ngFor="let extraField of field?.fields">
+              <div class="form-group" *ngIf="showCommentField(question?.id, field?.id, extraField?.id)">
+                <div *ngIf="extraField?.type == FieldType.TEXTAREA">
+                  <label for="{{extraField?.id}}">{{getTextLang(extraField?.title)}}</label>
+                  <textarea [ngClass]='{"validation-err": isSubmitted && (getIfErrorRequiredField(field?.id) || getIfFieldInvalid(field?.id) || getIfFieldInvalid(field?.id))}'
+                            class="form-control" id="{{extraField?.id}}" formControlName="{{extraField?.id}}"
+                            maxlength="{{extraField?.maxLength}}"
+                            rows="{{extraField?.rows}}"
+                            placeholder="{{extraField?.maxLength ? (('upto' | translate) + ' ' +  extraField?.maxLength + ' ' + ('characters' | translate)) : ''}}"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-lg-4" *ngIf="isSubmitted && getIfError(question?.id, null, true)">
+          <div class="valid-polygon"></div>
+          <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+            {{'mandatoryField' | translate}}
+          </div>
+
+        </div>
+      </div>
+
+
+      <div *ngIf="question?.type == QuestionType.TEXTINPUT">
+        <div class="form-check" *ngFor="let field of question?.fields">
+          <textarea placeholder="{{field?.maxLength ? (('upto' | translate) + ' ' +  field?.maxLength + ' ' + ('characters' | translate)) : ''}}" [ngClass]='{"validation-err": isSubmitted && (getIfError(question?.id) || getIfFieldInvalid(question?.id))}' class="form-control"
+                    id="{{question?.id}}" formControlName="{{question?.id}}" rows="{{field?.rows}}" maxlength="{{field?.maxLength}}"></textarea>
+        </div>
+        <div class="px-lg-4" *ngIf="isSubmitted && getIfError(question?.id)">
+          <div class="valid-polygon"></div>
+          <div class="p-3 form-validation-msg d-flex align-items-center justify-content-center">
+            {{'mandatoryField' | translate}}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="form-separator">
+
+  <div class="alert alert-danger py-3" role="alert"
+       *ngIf="showErrorMessage">
+    <div class="d-flex justify-content-between">
+      <div class="d-flex pb-1">
+      <span class="material-icons-outlined">
+        info
+      </span>
+      </div>
+      <button type="button" class="btn btn-close d-flex" data-bs-dismiss="alert" aria-label="Close"
+              (click)="closeErrorMessage()"></button>
+    </div>
+    <p class="my-0">{{'errorMsg' | translate}}</p>
+  </div>
+
+  <div class="d-flex flex-md-row flex-column-reverse justify-content-between">
+    <div class="py-1">
+      <button class="form-cancel-button w-100" type="button" (click)="openModal()">{{'close' | translate}}</button>
+    </div>
+    <div class="py-1">
+      <button class="form-submit-button w-100" type="submit">{{'sendForm' | translate}}</button>
+    </div>
+  </div>
+</form>
+
+
+

@@ -1,0 +1,73 @@
+$black-coral-6: #9799a4;
+$black-coral-20: #09090b;
+$jasper-10: #d73e3e;
+$sapphire-blue-4: #8bb4d5;
+$sapphire-blue-10: #005aa3;
+$white: #ffffff;
+
+.question-text {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: $black-coral-20;
+}
+
+.question-description {
+  color: $black-coral-6;
+  font-size: 14px;
+}
+
+.question-required {
+  color: $jasper-10;
+}
+
+.form-sections {
+  font-family: 'Roboto';
+}
+
+.form-separator {
+  border: 1px solid $sapphire-blue-4;
+}
+
+.form-cancel-button {
+  border-radius: 22px;
+  background: $white;
+  padding: 0px 32px;
+  gap: 8px;
+  width: 113px;
+  height: 40px;
+}
+
+.form-submit-button {
+  background: $sapphire-blue-10;
+  border-radius: 22px;
+  border: none;
+  padding: 0px 32px;
+  gap: 8px;
+  color: white;
+  width: 113px;
+  height: 40px;
+}
+
+.form-validation-msg {
+  background: $jasper-10;
+  border-radius: 4px;
+  min-width: 183px;
+  max-width: fit-content;
+  height: 40px;
+  color: $white;
+}
+
+.valid-polygon {
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-top: 0;
+  border-bottom: 6px solid $jasper-10;
+  margin-left: 10px;
+}
+
+
+.validation-err {
+  border-color: $jasper-10;
+}

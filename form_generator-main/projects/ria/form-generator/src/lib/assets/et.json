@@ -1,0 +1,17 @@
+{
+  "success": "Success",
+  "successMsg": "Aitäh, et täitsite küsimustiku! Teie andmed salvestati.",
+  "lastSubmitted": "Viimati esitas:",
+  "person": "Isik",
+  "submitTime": "Esitamise aeg:",
+  "mandatoryField": "Peab olema täidetud",
+  "correctEmail": "Palun sisestage korrektne e-maili aadress",
+  "correctNumber": "Palun sisestage korrektne number",
+  "error": "Error",
+  "errorMsg": "Andmete salvestamisel tekkis viga. Palun proovige uuesti ja kui probleem on püsiv, siis võtke palun ühendust meie kasutajatoega help@ria.ee",
+  "close": "Sulgen",
+  "sendForm": "Saadan ankeedi",
+  "upto": "Kuni",
+  "characters": "sümbolit"
+
+}
